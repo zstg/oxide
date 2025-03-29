@@ -1,10 +1,11 @@
 use crate::gen_ir::{Function, IROp, IR};
+use crate::parse::{Node, NodeType};
+use crate::{Ctype, Type};
 
 // Detects if a loop can be vectorized
 fn can_vectorize_loop(ir: &[IR]) -> bool {
     // Simple heuristic: look for loops with regular memory access patterns
     // and simple arithmetic operations
-    // This is a simplified implementation - a real vectorizer would be more complex
     
     // Check for loop pattern
     let mut has_loop = false;
@@ -45,6 +46,48 @@ fn can_vectorize_loop(ir: &[IR]) -> bool {
     has_loop && has_regular_access && has_simple_arithmetic
 }
 
+// Identify array operations that can be vectorized
+fn identify_array_operations(ir: &[IR]) -> Vec<(usize, usize)> {
+    let mut vector_ops = Vec::new();
+    let mut i = 0;
+    
+    while i < ir.len() {
+        // Look for patterns like:
+        // 1. Load from array
+        // 2. Perform arithmetic
+        // 3. Store back to array
+        
+        let start_idx = i;
+        let mut is_vector_op = false;
+        let mut end_idx = i;
+        
+        // Check for load operation
+        if i < ir.len() && matches!(ir[i].op, IROp::Load(_)) {
+            i += 1;
+            
+            // Check for arithmetic operation
+            if i < ir.len() && matches!(ir[i].op, IROp::Add | IROp::Sub | IROp::Mul | IROp::Div) {
+                i += 1;
+                
+                // Check for store operation
+                if i < ir.len() && matches!(ir[i].op, IROp::Store(_)) {
+                    is_vector_op = true;
+                    end_idx = i;
+                    i += 1;
+                }
+            }
+        }
+        
+        if is_vector_op {
+            vector_ops.push((start_idx, end_idx));
+        } else {
+            i += 1;
+        }
+    }
+    
+    vector_ops
+}
+
 // Convert regular IR operations to AVX512 operations
 fn convert_to_avx512(ir: &mut [IR]) {
     for i in 0..ir.len() {
@@ -61,13 +104,49 @@ fn convert_to_avx512(ir: &mut [IR]) {
     }
 }
 
+// Apply vectorization to specific ranges of IR instructions
+fn vectorize_ranges(ir: &mut [IR], ranges: &[(usize, usize)]) {
+    for &(start, end) in ranges {
+        for i in start..=end {
+            match ir[i].op {
+                IROp::Add => ir[i].op = IROp::AVX512Add,
+                IROp::Sub => ir[i].op = IROp::AVX512Sub,
+                IROp::Mul => ir[i].op = IROp::AVX512Mul,
+                IROp::Div => ir[i].op = IROp::AVX512Div,
+                IROp::Load(_) => ir[i].op = IROp::AVX512Load,
+                IROp::Store(_) => ir[i].op = IROp::AVX512Store,
+                IROp::Mov => ir[i].op = IROp::AVX512Mov,
+                _ => {}
+            }
+        }
+    }
+}
+
+// Check if a function has array operations that can benefit from AVX512
+fn has_array_operations(f: &Function) -> bool {
+    for ir in &f.ir {
+        if matches!(ir.op, IROp::Load(_) | IROp::Store(_)) {
+            return true;
+        }
+    }
+    false
+}
+
 // Main vectorization function
 pub fn vectorize(fns: &mut Vec<Function>) {
     for f in fns {
-        // Check if the function contains loops that can be vectorized
+        // Strategy 1: Check for vectorizable loops
         if can_vectorize_loop(&f.ir) {
-            // Convert appropriate operations to AVX512 operations
             convert_to_avx512(&mut f.ir);
+            continue;
+        }
+        
+        // Strategy 2: Check for array operations
+        if has_array_operations(f) {
+            let vector_ops = identify_array_operations(&f.ir);
+            if !vector_ops.is_empty() {
+                vectorize_ranges(&mut f.ir, &vector_ops);
+            }
         }
     }
 } 

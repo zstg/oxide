@@ -1,6 +1,6 @@
 use crate::gen_ir::{Function, IROp, IR};
 use crate::util::roundup;
-use crate::{Scope, Var, REGS_N};
+use crate::{Ctype,Scope, Var, REGS_N};
 
 const REGS: [&str; REGS_N] = ["r10", "r11", "rbx", "r12", "r13", "r14", "r15"];
 const REGS8: [&str; REGS_N] = ["r10b", "r11b", "bl", "r12b", "r13b", "r14b", "r15b"];
@@ -92,6 +92,15 @@ fn argreg(r: usize, size: u8) -> &'static str {
     }
 }
 
+fn emit_header() {
+    println!("bits 64");
+    println!("section .text");
+    println!("global main");
+    println!("extern printf");
+    println!("extern exit");
+    println!("");
+}
+
 fn gen(f: Function) {
     use self::IROp::*;
     let ret = format!(".Lend{}", *LABEL.lock().unwrap());
@@ -156,7 +165,7 @@ fn gen(f: Function) {
                  */
                 emit!("mov rax, {}", REGS[lhs]);
                 emit!("cqo"); // rax -> rdx:rax
-                emit!("div {}", REGS[rhs]);
+                emit!("idiv {}", REGS[rhs]);
                 emit!("mov {}, rdx", REGS[lhs]);
             }
             Jmp => emit!("jmp .L{}", lhs),
@@ -169,36 +178,44 @@ fn gen(f: Function) {
                 emit!("je .L{}", rhs);
             }
             Load(size) => {
-                emit!("mov {}, [{}]", reg(lhs, size), REGS[rhs]);
-                if size == 1 {
-                    emit!("movzb {}, {}", REGS[lhs], REGS8[lhs]);
+                match size {
+                    1 => emit!("movzx {}, byte [{}]", REGS[lhs], REGS[rhs]),
+                    4 => emit!("movsxd {}, dword [{}]", REGS[lhs], REGS[rhs]),
+                    8 => emit!("mov {}, [{}]", REGS[lhs], REGS[rhs]),
+                    _ => panic!("Unknown data size: {}", size),
                 }
             }
-            Store(size) => emit!("mov [{}], {}", REGS[lhs], reg(rhs, size)),
-            StoreArg(size) => emit!("mov [rbp-{}], {}", lhs, argreg(rhs, size)),
+            Store(size) => {
+                match size {
+                    1 => emit!("mov byte [{}], {}", REGS[lhs], REGS8[rhs]),
+                    4 => emit!("mov dword [{}], {}", REGS[lhs], REGS32[rhs]),
+                    8 => emit!("mov [{}], {}", REGS[lhs], REGS[rhs]),
+                    _ => panic!("Unknown data size: {}", size),
+                }
+            }
+            StoreArg(size) => {
+                match size {
+                    1 => emit!("mov byte [rbp+{}], {}", lhs, REGS8[rhs]),
+                    4 => emit!("mov dword [rbp+{}], {}", lhs, REGS32[rhs]),
+                    8 => emit!("mov qword [rbp+{}], {}", lhs, REGS[rhs]),
+                    _ => panic!("Unknown data size: {}", size),
+                }
+            }
             Add => emit!("add {}, {}", REGS[lhs], REGS[rhs]),
-            AddImm => emit!("add {}, {}", REGS[lhs], rhs as i32),
+            AddImm => emit!("add {}, {}", REGS[lhs], rhs),
             Sub => emit!("sub {}, {}", REGS[lhs], REGS[rhs]),
-            SubImm => emit!("sub {}, {}", REGS[lhs], rhs as i32),
-            Bprel => emit!("lea {}, [rbp-{}]", REGS[lhs], rhs),
+            SubImm => emit!("sub {}, {}", REGS[lhs], rhs),
+            Bprel => emit!("lea {}, [rbp+{}]", REGS[lhs], rhs),
             Mul => {
                 emit!("mov rax, {}", REGS[rhs]);
                 emit!("mul {}", REGS[lhs]);
                 emit!("mov {}, rax", REGS[lhs]);
             }
-            MulImm => {
-                if rhs < 256 && rhs.count_ones() == 1 {
-                    emit!("shl {}, {}", REGS[lhs], rhs.trailing_zeros());
-                } else {
-                    emit!("mov rax, {}", rhs as i32);
-                    emit!("mul {}", REGS[lhs]);
-                    emit!("mov {}, rax", REGS[lhs]);
-                }
-            }
+            MulImm => emit!("imul {}, {}, {}", REGS[lhs], REGS[lhs], rhs),
             Div => {
                 emit!("mov rax, {}", REGS[lhs]);
                 emit!("cqo");
-                emit!("div {}", REGS[rhs]);
+                emit!("idiv {}", REGS[rhs]);
                 emit!("mov {}, rax", REGS[lhs]);
             }
             Nop | Kill => (),
@@ -223,21 +240,47 @@ fn gen(f: Function) {
 }
 
 pub fn gen_x86(globals: Vec<Var>, fns: Vec<Function>) {
-    println!(".intel_syntax noprefix");
-    println!(".data");
-    for var in globals {
-        if let Scope::Global(data, len, is_extern) = var.scope {
-            if is_extern {
-                continue;
+    // Extract global variables for data section
+    let mut globals_data = Vec::new();
+    for var in &globals {
+        if let Scope::Global(ref data, len, is_extern) = var.scope {
+            if !is_extern {
+                globals_data.push((var.name.clone(), data.clone(), len));
             }
-            println!("{}:", var.name);
-            emit!(".ascii \"{}\"", backslash_escape(data, len));
-            continue;
         }
-        unreachable!();
     }
-
+    
+    emit_header();
+    
+    // Emit data section if we have globals
+    if !globals_data.is_empty() {
+        println!("section .data");
+        for (name, data, len) in globals_data {
+            println!("{}:", name);
+            if data.is_empty() {
+                println!("    dq 0");
+            } else {
+                // Handle string literals or other initialized data
+                println!("    db {}", data);
+            }
+        }
+        println!("");
+    }
+    
+    // Emit text section
+    println!("section .text");
+    
     for f in fns {
+        println!("{}:", f.name);
+        println!("    push rbp");
+        println!("    mov rbp, rsp");
+        println!("    sub rsp, {}", f.stacksize);
+        
         gen(f);
+        
+        // Add a default return if needed
+        println!("    leave");
+        println!("    ret");
+        println!("");
     }
 }
