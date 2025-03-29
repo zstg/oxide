@@ -4032,13 +4032,13 @@ chmod +x ./mat
 Note that the required Assembly file is ~mat.s~.
 
 ** Screenshots
-[[/home/stig/Desktop/Screenshot_20250329_215336.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215442.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215458.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215518.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215530.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215549.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215600.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215610.png]]
-[[/home/stig/Desktop/Screenshot_20250329_215758.png]]
+[[./Screenshot_20250329_215336.png]]
+[[./Screenshot_20250329_215442.png]]
+[[./Screenshot_20250329_215458.png]]
+[[./Screenshot_20250329_215518.png]]
+[[./Screenshot_20250329_215530.png]]
+[[./Screenshot_20250329_215549.png]]
+[[./Screenshot_20250329_215600.png]]
+[[./Screenshot_20250329_215610.png]]
+[[./Screenshot_20250329_215758.png]]
 
