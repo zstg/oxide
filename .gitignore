@@ -2,7 +2,6 @@
 **/*.rs.bk
 *~
 *.o
-*.s
 tmp*
 out
 fib
