@@ -9,8 +9,6 @@ fibdp:
     dq 0
 
 section .text
-.text
-.global fib
 fib:
 	push rbp
 	mov rbp, rsp
@@ -133,8 +131,6 @@ fib:
 	mov rsp, rbp
 	pop rbp
 	ret
-.text
-.global main
 main:
 	push rbp
 	mov rbp, rsp

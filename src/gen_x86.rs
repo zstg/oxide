@@ -111,8 +111,8 @@ fn gen(f: Function) {
     let ret = format!(".Lend{}", *LABEL.lock().unwrap());
     *LABEL.lock().unwrap() += 1;
 
-    println!(".text");
-    println!(".global {}", f.name);
+    // println!(".text");
+    // println!(".global {}", f.name);
     println!("{}:", f.name);
     emit!("push rbp");
     emit!("mov rbp, rsp");
