@@ -1,12 +1,7 @@
 #+TITLE: Digital Assignment 3
-#+AUTHOR: Srikanth Anand (22BAI1117)
+#+AUTHOR: Srikanth Anand (22BAI1117), Vageesh J (22B    ), Aravind N (22B    )
 
 * Design and algorithm
-
-* Compilation
-#+BEGIN_SRC shell
-cargo run -- -dump-ir2 examples/mat.c &> mat.s
-#+END_SRC
 
 * Code
 ** ~gen_ir.rs~
@@ -4035,3 +4030,15 @@ chmod +x ./mat
 #+END_SRC
 
 Note that the required Assembly file is ~mat.s~.
+
+** Screenshots
+[[/home/stig/Desktop/Screenshot_20250329_215336.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215442.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215458.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215518.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215530.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215549.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215600.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215610.png]]
+[[/home/stig/Desktop/Screenshot_20250329_215758.png]]
+
