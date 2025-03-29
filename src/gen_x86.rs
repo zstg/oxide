@@ -20,13 +20,16 @@ use std::sync::Mutex;
 // > This pass generates x86-64 assembly from IR.
 
 const ARGREGS: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+#[allow(dead_code)]
 const ARGREGS8: [&str; 6] = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
+#[allow(dead_code)]
 const ARGREGS32: [&str; 6] = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 
 lazy_static! {
     static ref LABEL: Mutex<usize> = Mutex::new(0);
 }
 
+#[allow(dead_code)]
 fn backslash_escape(s: String, len: usize) -> String {
     let mut sb = String::new();
     for i in 0..len {
@@ -74,6 +77,7 @@ fn emit_cmp(ir: IR, insn: &'static str) {
     emit!("movzx {}, {}", REGS[lhs], REGS8[lhs]);
 }
 
+#[allow(dead_code)]
 fn reg(r: usize, size: u8) -> &'static str {
     match size {
         1 => REGS8[r],
@@ -83,6 +87,7 @@ fn reg(r: usize, size: u8) -> &'static str {
     }
 }
 
+#[allow(dead_code)]
 fn argreg(r: usize, size: u8) -> &'static str {
     match size {
         1 => ARGREGS8[r],

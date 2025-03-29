@@ -168,8 +168,6 @@ fn convert_to_avx512(ir: &mut [IR]) {
             IROp::EQ => ir[i].op = IROp::AVX512Cmpeq,
             
             // Add more pattern-specific conversions
-            IROp::LT => ir[i].op = IROp::AVX512Cmplt,
-            
             _ => {}
         }
     }
