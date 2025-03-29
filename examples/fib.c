@@ -15,6 +15,5 @@ int main() {
   for (int i = 0; i < 100; i++) 
     fibdp[i] = 0;
   int ans = fib(46);
-  printf("%d\n", ans);
-  return 0;
+  return ans;
 }

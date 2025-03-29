@@ -1,6 +1,4 @@
 use crate::gen_ir::{Function, IROp, IR};
-use crate::parse::{Node, NodeType};
-use crate::{Ctype, Type};
 
 // Detects if a loop can be vectorized
 fn can_vectorize_loop(ir: &[IR]) -> bool {
@@ -92,13 +90,35 @@ fn identify_array_operations(ir: &[IR]) -> Vec<(usize, usize)> {
 fn convert_to_avx512(ir: &mut [IR]) {
     for i in 0..ir.len() {
         match ir[i].op {
+            // Convert floating-point operations
             IROp::Add => ir[i].op = IROp::AVX512Add,
             IROp::Sub => ir[i].op = IROp::AVX512Sub,
             IROp::Mul => ir[i].op = IROp::AVX512Mul,
             IROp::Div => ir[i].op = IROp::AVX512Div,
-            IROp::Load(_) => ir[i].op = IROp::AVX512Load,
-            IROp::Store(_) => ir[i].op = IROp::AVX512Store,
+            
+            // Convert integer operations
+            IROp::AddImm => ir[i].op = IROp::AVX512Addi,
+            IROp::SubImm => ir[i].op = IROp::AVX512Subi,
+            IROp::MulImm => ir[i].op = IROp::AVX512Muli,
+            
+            // Convert memory operations
+            IROp::Load(_) => {
+                // Determine if we're loading integers or floats
+                // This is a simplification - in a real implementation, you'd check the type
+                ir[i].op = IROp::AVX512Load;
+            },
+            IROp::Store(_) => {
+                // Determine if we're storing integers or floats
+                // This is a simplification - in a real implementation, you'd check the type
+                ir[i].op = IROp::AVX512Store;
+            },
             IROp::Mov => ir[i].op = IROp::AVX512Mov,
+            
+            // Convert comparison operations
+            IROp::LT => ir[i].op = IROp::AVX512Cmplt,
+            IROp::LE => ir[i].op = IROp::AVX512Cmple,
+            IROp::EQ => ir[i].op = IROp::AVX512Cmpeq,
+            
             _ => {}
         }
     }

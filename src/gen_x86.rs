@@ -1,6 +1,6 @@
 use crate::gen_ir::{Function, IROp, IR};
 use crate::util::roundup;
-use crate::{Ctype,Scope, Var, REGS_N};
+use crate::{Scope, Var, REGS_N};
 
 const REGS: [&str; REGS_N] = ["r10", "r11", "rbx", "r12", "r13", "r14", "r15"];
 const REGS8: [&str; REGS_N] = ["r10b", "r11b", "bl", "r12b", "r13b", "r14b", "r15b"];
@@ -98,7 +98,7 @@ fn emit_header() {
     println!("global main");
     println!("extern printf");
     println!("extern exit");
-    println!("");
+    println!();
 }
 
 fn gen(f: Function) {
@@ -111,7 +111,7 @@ fn gen(f: Function) {
     println!("{}:", f.name);
     emit!("push rbp");
     emit!("mov rbp, rsp");
-    emit!("sub rsp, {}", roundup(f.stacksize, 16));
+    emit!("sub rsp, {}", roundup(f.stacksize, 64));  // Align to 64 bytes for AVX512
     emit!("push r12");
     emit!("push r13");
     emit!("push r14");
@@ -223,9 +223,42 @@ fn gen(f: Function) {
             AVX512Sub => emit!("vsubpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
             AVX512Mul => emit!("vmulpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
             AVX512Div => emit!("vdivpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
-            AVX512Load => emit!("vmovapd {}, [{}]", ZMM_REGS[lhs], REGS[rhs]),
-            AVX512Store => emit!("vmovapd [{}], {}", REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Load => {
+                // Determine if we're loading from a memory address or register
+                if ir.rhs.is_some() {
+                    emit!("vmovapd {}, [{}]", ZMM_REGS[lhs], REGS[rhs]);
+                } else {
+                    emit!("vmovapd {}, [rsp+{}]", ZMM_REGS[lhs], lhs * 8);
+                }
+            },
+            AVX512Store => {
+                // Determine if we're storing to a memory address or register
+                if ir.lhs.is_some() {
+                    emit!("vmovapd [{}], {}", REGS[lhs], ZMM_REGS[rhs]);
+                } else {
+                    emit!("vmovapd [rsp+{}], {}", lhs * 8, ZMM_REGS[rhs]);
+                }
+            },
             AVX512Mov => emit!("vmovapd {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Addi => emit!("vpaddd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Subi => emit!("vpsubd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Muli => emit!("vpmulld {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Loadi => emit!("vmovdqu32 {}, [{}]", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512Storei => emit!("vmovdqu32 [{}], {}", REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Movi => emit!("vmovdqu32 {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Zero => emit!("vpxord {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[lhs]),
+            AVX512Set1 => emit!("vbroadcastsd {}, {}", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512Set1i => emit!("vpbroadcastd {}, {}", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512Cmplt => emit!("vcmpltpd k1, {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Cmple => emit!("vcmplepd k1, {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Cmpeq => emit!("vcmpeqpd k1, {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512MaskMove => emit!("vmovapd {} {{k1}}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512MaskLoad => emit!("vmovapd {} {{k1}}, [{}]", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512MaskStore => emit!("vmovapd [{}] {{k1}}, {}", REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Cvtdq2pd => emit!("vcvtdq2pd {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs].replace("zmm", "ymm")),
+            AVX512Cvtpd2dq => emit!("vcvtpd2dq {}, {}", ZMM_REGS[lhs].replace("zmm", "ymm"), ZMM_REGS[rhs]),
+            AVX512Extract => emit!("vmovq {}, {}", REGS[lhs], ZMM_REGS[rhs].replace("zmm", "xmm")),
+            AVX512Insert => emit!("vpinsrq {}, {}, {}, 0", ZMM_REGS[lhs].replace("zmm", "xmm"), ZMM_REGS[lhs].replace("zmm", "xmm"), REGS[rhs]),
         }
     }
 
@@ -264,7 +297,7 @@ pub fn gen_x86(globals: Vec<Var>, fns: Vec<Function>) {
                 println!("    db {}", data);
             }
         }
-        println!("");
+        println!();
     }
     
     // Emit text section
@@ -281,6 +314,6 @@ pub fn gen_x86(globals: Vec<Var>, fns: Vec<Function>) {
         // Add a default return if needed
         println!("    leave");
         println!("    ret");
-        println!("");
+        println!();
     }
 }

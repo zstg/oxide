@@ -12,12 +12,10 @@ impl IRInfo {
     pub fn new(name: &'static str, ty: IRType) -> Self {
         IRInfo { name, ty }
     }
-}
 
-impl<'a> From<&'a IROp> for IRInfo {
-    fn from(op: &'a IROp) -> IRInfo {
+    pub fn from(op: &IROp) -> IRInfo {
         use self::IROp::*;
-        match op {
+        match *op {
             Add => IRInfo::new("ADD", IRType::RegReg),
             AddImm => IRInfo::new("ADD", IRType::RegImm),
             Call(_, _, _) => IRInfo::new("CALL", IRType::Call),
@@ -58,7 +56,32 @@ impl<'a> From<&'a IROp> for IRInfo {
             AVX512Load => IRInfo::new("AVX512_LOAD", IRType::Mem),
             AVX512Store => IRInfo::new("AVX512_STORE", IRType::Mem),
             AVX512Mov => IRInfo::new("AVX512_MOV", IRType::RegReg),
+            AVX512Addi => IRInfo::new("AVX512_ADDI", IRType::RegReg),
+            AVX512Subi => IRInfo::new("AVX512_SUBI", IRType::RegReg),
+            AVX512Muli => IRInfo::new("AVX512_MULI", IRType::RegReg),
+            AVX512Loadi => IRInfo::new("AVX512_LOADI", IRType::Mem),
+            AVX512Storei => IRInfo::new("AVX512_STOREI", IRType::Mem),
+            AVX512Movi => IRInfo::new("AVX512_MOVI", IRType::RegReg),
+            AVX512Zero => IRInfo::new("AVX512_ZERO", IRType::Reg),
+            AVX512Set1 => IRInfo::new("AVX512_SET1", IRType::RegReg),
+            AVX512Set1i => IRInfo::new("AVX512_SET1I", IRType::RegReg),
+            AVX512Cmplt => IRInfo::new("AVX512_CMPLT", IRType::RegReg),
+            AVX512Cmple => IRInfo::new("AVX512_CMPLE", IRType::RegReg),
+            AVX512Cmpeq => IRInfo::new("AVX512_CMPEQ", IRType::RegReg),
+            AVX512MaskMove => IRInfo::new("AVX512_MASK_MOV", IRType::RegReg),
+            AVX512MaskLoad => IRInfo::new("AVX512_MASK_LOAD", IRType::Mem),
+            AVX512MaskStore => IRInfo::new("AVX512_MASK_STORE", IRType::Mem),
+            AVX512Cvtdq2pd => IRInfo::new("AVX512_CVTDQ2PD", IRType::RegReg),
+            AVX512Cvtpd2dq => IRInfo::new("AVX512_CVTPD2DQ", IRType::RegReg),
+            AVX512Extract => IRInfo::new("AVX512_EXTRACT", IRType::RegReg),
+            AVX512Insert => IRInfo::new("AVX512_INSERT", IRType::RegReg),
         }
+    }
+}
+
+impl<'a> From<&'a IROp> for IRInfo {
+    fn from(op: &'a IROp) -> IRInfo {
+        IRInfo::from(op)
     }
 }
 
