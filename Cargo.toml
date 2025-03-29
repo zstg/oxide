@@ -1,0 +1,14 @@
+[package]
+name = "oxide"
+version = "0.1.0"
+authors = ["zstg <zestig@duck.com>"]
+edition = '2021'
+
+[dependencies]
+lazy_static = "*"
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"
+opt-level = 3

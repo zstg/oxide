@@ -1,0 +1,154 @@
+.intel_syntax noprefix
+.data
+.text
+.global fib
+fib:
+	push rbp
+	mov rbp, rsp
+	sub rsp, 272
+	push r12
+	push r13
+	push r14
+	push r15
+	mov [rbp-4], edi
+	mov r10, 0
+	lea r11, [rbp-260]
+	mov rbx, 0
+	mov r12, 4
+	mov rax, r12
+	mul rbx
+	mov rbx, rax
+	add r11, rbx
+	mov [r11], r10d
+	lea r10, [rbp-4]
+	mov r10d, [r10]
+	mov r11, 0
+	cmp r10, r11
+	sete r10b
+	movzb r10, r10b
+	cmp r10, 0
+	je .L2
+	mov r10, 1
+	jmp .L3
+.L2:
+	lea r11, [rbp-4]
+	mov r11d, [r11]
+	mov rbx, 1
+	cmp r11, rbx
+	sete r11b
+	movzb r11, r11b
+	mov r10, r11
+	cmp r10, 0
+	je .L3
+	mov r10, 1
+.L3:
+	cmp r10, 0
+	je .L1
+	lea r10, [rbp-4]
+	mov r10d, [r10]
+	mov rax, r10
+	jmp .Lend0
+.L1:
+	lea r10, [rbp-260]
+	lea r11, [rbp-4]
+	mov r11d, [r11]
+	mov rbx, 4
+	mov rax, rbx
+	mul r11
+	mov r11, rax
+	add r10, r11
+	mov r10d, [r10]
+	mov r11, 0
+	cmp r10, r11
+	setne r10b
+	movzb r10, r10b
+	cmp r10, 0
+	je .L4
+	lea r10, [rbp-260]
+	lea r11, [rbp-4]
+	mov r11d, [r11]
+	mov rbx, 4
+	mov rax, rbx
+	mul r11
+	mov r11, rax
+	add r10, r11
+	mov r10d, [r10]
+	mov rax, r10
+	jmp .Lend0
+.L4:
+	lea r10, [rbp-4]
+	mov r10d, [r10]
+	mov r11, 2
+	sub r10, r11
+	mov rdi, r10
+	push r10
+	push r11
+	mov rax, 0
+	call fib
+	pop r11
+	pop r10
+	mov r11, rax
+	lea r10, [rbp-4]
+	mov r10d, [r10]
+	mov rbx, 1
+	sub r10, rbx
+	mov rdi, r10
+	push r10
+	push r11
+	mov rax, 0
+	call fib
+	pop r11
+	pop r10
+	mov rbx, rax
+	add r11, rbx
+	lea r10, [rbp-260]
+	lea rbx, [rbp-4]
+	mov ebx, [rbx]
+	mov r12, 4
+	mov rax, r12
+	mul rbx
+	mov rbx, rax
+	add r10, rbx
+	mov [r10], r11d
+	mov rax, r11
+	jmp .Lend0
+.Lend0:
+	pop r15
+	pop r14
+	pop r13
+	pop r12
+	mov rsp, rbp
+	pop rbp
+	ret
+.text
+.global main
+main:
+	push rbp
+	mov rbp, rsp
+	sub rsp, 16
+	push r12
+	push r13
+	push r14
+	push r15
+	mov r10, 46
+	mov rdi, r10
+	push r10
+	push r11
+	mov rax, 0
+	call fib
+	pop r11
+	pop r10
+	mov r11, rax
+	lea r10, [rbp-4]
+	mov [r10], r11d
+	mov r10, 0
+	mov rax, r10
+	jmp .Lend1
+.Lend1:
+	pop r15
+	pop r14
+	pop r13
+	pop r12
+	mov rsp, rbp
+	pop rbp
+	ret

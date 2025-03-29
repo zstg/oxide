@@ -1,0 +1,8 @@
+[build]
+rustflags = [
+	"-C", "target-feature=+avx2",
+	"-C", "target-cpu=icelake",
+	"-C", "opt-level=3",
+	"-C", "llvm-args=-vectorize-loops",
+	"-C", "llvm-args=-vectorize-slp"
+]
