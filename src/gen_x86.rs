@@ -71,7 +71,7 @@ fn emit_cmp(ir: IR, insn: &'static str) {
     let rhs = ir.rhs.unwrap();
     emit!("cmp {}, {}", REGS[lhs], REGS[rhs]);
     emit!("{} {}", insn, REGS8[lhs]);
-    emit!("movzb {}, {}", REGS[lhs], REGS8[lhs]);
+    emit!("movzx {}, {}", REGS[lhs], REGS8[lhs]);
 }
 
 fn reg(r: usize, size: u8) -> &'static str {
@@ -317,17 +317,8 @@ pub fn gen_x86(globals: Vec<Var>, fns: Vec<Function>) {
     // Emit text section
     println!("section .text");
     
+    // Generate each function only once
     for f in fns {
-        println!("{}:", f.name);
-        println!("    push rbp");
-        println!("    mov rbp, rsp");
-        println!("    sub rsp, {}", f.stacksize);
-        
         gen(f);
-        
-        // Add a default return if needed
-        println!("    leave");
-        println!("    ret");
-        println!();
     }
 }
