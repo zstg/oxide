@@ -8,12 +8,13 @@ use oxide::preprocess::Preprocessor;
 use oxide::regalloc::alloc_regs;
 use oxide::sema::sema;
 use oxide::token::tokenize;
+use oxide::vectorize::vectorize;
 
 use std::env;
 use std::process;
 
 fn usage() -> ! {
-    eprintln!("Usage: oxide [-dump-ir1] [-dump-ir2] <file>");
+    eprintln!("Usage: oxide [-dump-ir1] [-dump-ir2] [-dump-ir3] <file>");
     process::exit(1)
 }
 
@@ -25,6 +26,7 @@ fn main() {
 
     let mut dump_ir1 = false;
     let mut dump_ir2 = false;
+    let mut dump_ir3 = false;
     let path;
 
     if args.len() == 3 && args[1] == "-dump-ir1" {
@@ -32,6 +34,9 @@ fn main() {
         path = args[2].clone();
     } else if args.len() == 3 && args[1] == "-dump-ir2" {
         dump_ir2 = true;
+        path = args[2].clone();
+    } else if args.len() == 3 && args[1] == "-dump-ir3" {
+        dump_ir3 = true;
         path = args[2].clone();
     } else {
         if args.len() != 2 {
@@ -54,6 +59,12 @@ fn main() {
     alloc_regs(&mut fns);
 
     if dump_ir2 {
+        dump_ir(&fns);
+    }
+    
+    vectorize(&mut fns);
+    
+    if dump_ir3 {
         dump_ir(&fns);
     }
 

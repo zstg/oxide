@@ -12,6 +12,7 @@ pub fn preprocess(tokens: Vec<Token>, ctx: &mut Preprocessor) -> Vec<Token> {
 }
 
 #[derive(Clone)]
+#[derive(Default)]
 pub struct Env {
     input: Vec<Token>,
     output: Vec<Token>,
@@ -19,16 +20,6 @@ pub struct Env {
     next: Option<Box<Env>>,
 }
 
-impl Default for Env {
-    fn default() -> Env {
-        Env {
-            input: vec![],
-            output: vec![],
-            pos: 0,
-            next: None,
-        }
-    }
-}
 
 impl Env {
     pub fn new(input: Vec<Token>, next: Option<Box<Env>>) -> Self {
@@ -132,6 +123,12 @@ pub struct Preprocessor {
     pub env: Box<Env>,
 }
 
+impl Default for Preprocessor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Preprocessor {
     pub fn new() -> Self {
         Preprocessor {
@@ -145,7 +142,7 @@ impl Preprocessor {
             return None;
         }
         let pos = self.env.pos;
-        let t = Some(mem::replace(&mut self.env.input[pos], Token::default()));
+        let t = Some(std::mem::take(&mut self.env.input[pos]));
         self.env.pos += 1;
         t
     }
@@ -205,10 +202,8 @@ impl Preprocessor {
 
         while !self.eof() {
             let t = self.peek().expect(msg).clone();
-            if level == 0 {
-                if t.ty == TokenType::RightParen || t.ty == TokenType::Comma {
-                    return v;
-                }
+            if level == 0 && (t.ty == TokenType::RightParen || t.ty == TokenType::Comma) {
+                return v;
             }
 
             self.next();

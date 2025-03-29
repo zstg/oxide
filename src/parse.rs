@@ -273,10 +273,10 @@ impl<'a> Parser<'a> {
         match t.ty {
             TokenType::Ident(ref name) => {
                 if let Some(ty) = self.find_typedef(name) {
-                    return Some(ty.clone());
+                    Some(ty.clone())
                 } else {
                     self.pos -= 1;
-                    return None;
+                    None
                 }
             }
             TokenType::Int => Some(Type::int_ty()),
@@ -300,7 +300,7 @@ impl<'a> Parser<'a> {
                 let mut ty_may: Option<Type> = None;
                 if let Some(ref tag) = tag_may {
                     if members.is_empty() {
-                        ty_may = self.find_tag(&tag);
+                        ty_may = self.find_tag(tag);
                     }
                 }
                 let mut ty = ty_may.unwrap_or(Type::new(Ctype::Struct(vec![]), 10));
@@ -743,7 +743,7 @@ impl<'a> Parser<'a> {
                 let node = self.declaration();
                 if let NodeType::Vardef(name, _, _) = node.op {
                     self.env.typedefs.insert(name, *node.ty);
-                    return Node::new(NodeType::Null);
+                    Node::new(NodeType::Null)
                 } else {
                     unreachable!();
                 }

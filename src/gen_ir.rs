@@ -97,6 +97,13 @@ pub enum IROp {
     StoreArg(u8),
     Kill,
     Nop,
+    AVX512Add,
+    AVX512Sub,
+    AVX512Mul,
+    AVX512Div,
+    AVX512Load,
+    AVX512Store,
+    AVX512Mov,
 }
 
 impl From<NodeType> for IROp {
@@ -238,7 +245,7 @@ fn gen_post_inc(ty: &Type, expr: Box<Node>, num: i32) -> i32 {
         Some(val as usize),
         Some(num as usize * get_inc_scale(ty)),
     );
-    val as i32
+    val
 }
 
 fn to_assign_op(op: &TokenType) -> IROp {
@@ -432,7 +439,7 @@ fn gen_expr(node: Box<Node>) -> Option<usize> {
 
 fn gen_stmt(node: Node) {
     match node.op {
-        NodeType::Null => return,
+        NodeType::Null => (),
         NodeType::Vardef(_, init_may, Scope::Local(offset)) => {
             if let Some(init) = init_may {
                 let rhs = gen_expr(init);
@@ -443,7 +450,6 @@ fn gen_stmt(node: Node) {
                 kill(lhs);
                 kill(rhs);
             }
-            return;
         }
         NodeType::If(cond, then, els_may) => {
             if let Some(els) = els_may {

@@ -7,6 +7,7 @@ pub mod preprocess;
 pub mod regalloc;
 pub mod sema;
 pub mod token;
+pub mod vectorize;
 mod util;
 
 
@@ -142,7 +143,9 @@ impl TokenType {
 }
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub enum Ctype {
+    #[default]
     Int,
     Char,
     Void,
@@ -152,11 +155,6 @@ pub enum Ctype {
     Func(Box<Type>),
 }
 
-impl Default for Ctype {
-    fn default() -> Ctype {
-        Ctype::Int
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Type {

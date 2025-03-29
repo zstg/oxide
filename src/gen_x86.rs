@@ -6,6 +6,14 @@ const REGS: [&str; REGS_N] = ["r10", "r11", "rbx", "r12", "r13", "r14", "r15"];
 const REGS8: [&str; REGS_N] = ["r10b", "r11b", "bl", "r12b", "r13b", "r14b", "r15b"];
 const REGS32: [&str; REGS_N] = ["r10d", "r11d", "ebx", "r12d", "r13d", "r14d", "r15d"];
 
+// AVX512 registers
+const ZMM_REGS: [&str; 32] = [
+    "zmm0", "zmm1", "zmm2", "zmm3", "zmm4", "zmm5", "zmm6", "zmm7",
+    "zmm8", "zmm9", "zmm10", "zmm11", "zmm12", "zmm13", "zmm14", "zmm15",
+    "zmm16", "zmm17", "zmm18", "zmm19", "zmm20", "zmm21", "zmm22", "zmm23",
+    "zmm24", "zmm25", "zmm26", "zmm27", "zmm28", "zmm29", "zmm30", "zmm31"
+];
+
 use std::sync::Mutex;
 
 // Quoted from oxide
@@ -39,7 +47,7 @@ fn backslash_escape(s: String, len: usize) -> String {
                 sb.push('\\');
                 sb.push(esc);
             } else if c.is_ascii_graphic() || c == &' ' {
-                sb.push(c.clone());
+                sb.push(*c);
             } else {
                 sb.push_str(&format!("\\{:o}", *c as i8));
             }
@@ -101,7 +109,7 @@ fn gen(f: Function) {
     emit!("push r15");
 
     for ir in f.ir {
-        let lhs = ir.lhs.unwrap();
+        let lhs = ir.lhs.unwrap_or(0);
         let rhs = ir.rhs.unwrap_or(0);
         match ir.op {
             Imm => emit!("mov {}, {}", REGS[lhs], rhs as i32),
@@ -194,6 +202,13 @@ fn gen(f: Function) {
                 emit!("mov {}, rax", REGS[lhs]);
             }
             Nop | Kill => (),
+            AVX512Add => emit!("vaddpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Sub => emit!("vsubpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Mul => emit!("vmulpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Div => emit!("vdivpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Load => emit!("vmovapd {}, [{}]", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512Store => emit!("vmovapd [{}], {}", REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Mov => emit!("vmovapd {}, {}", ZMM_REGS[lhs], ZMM_REGS[rhs]),
         }
     }
 

@@ -51,6 +51,13 @@ impl<'a> From<&'a IROp> for IRInfo {
             Bprel => IRInfo::new("BPREL", IRType::RegImm),
             If => IRInfo::new("IF", IRType::RegLabel),
             Unless => IRInfo::new("UNLESS", IRType::RegLabel),
+            AVX512Add => IRInfo::new("AVX512_ADD", IRType::RegReg),
+            AVX512Sub => IRInfo::new("AVX512_SUB", IRType::RegReg),
+            AVX512Mul => IRInfo::new("AVX512_MUL", IRType::RegReg),
+            AVX512Div => IRInfo::new("AVX512_DIV", IRType::RegReg),
+            AVX512Load => IRInfo::new("AVX512_LOAD", IRType::Mem),
+            AVX512Store => IRInfo::new("AVX512_STORE", IRType::Mem),
+            AVX512Mov => IRInfo::new("AVX512_MOV", IRType::RegReg),
         }
     }
 }
@@ -88,11 +95,11 @@ impl fmt::Display for IR {
                     let mut sb: String = format!("  r{} = {}(", lhs, name);
                     for (i, arg) in args.iter().enumerate().take(nargs) {
                         if i != 0 {
-                            sb.push_str(&", ".to_string());
+                            sb.push_str(", ");
                         }
                         sb.push_str(&format!("r{}", *arg));
                     }
-                    sb.push_str(")");
+                    sb.push(')');
                     write!(f, "{}", sb)
                 }
                 _ => unreachable!(),

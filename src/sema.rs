@@ -253,7 +253,7 @@ fn walk(mut node: Node, decay: bool) -> Node {
                 }
                 AddEQ | SubEQ => {
                     lhs = Box::new(walk(*lhs, false));
-                    check_lval(&*lhs);
+                    check_lval(&lhs);
                     rhs = Box::new(walk(*rhs, true));
 
                     if matches!(lhs.ty.ty, Ctype::Ptr(_)) {
@@ -264,7 +264,7 @@ fn walk(mut node: Node, decay: bool) -> Node {
                 }
                 Equal | MulEQ | DivEQ | ModEQ | ShlEQ | ShrEQ | BitandEQ | XorEQ | BitorEQ => {
                     lhs = Box::new(walk(*lhs, false));
-                    check_lval(&*lhs);
+                    check_lval(&lhs);
                     node.op = BinOp(token_type, lhs.clone(), Box::new(walk(*rhs, true)));
                     node.ty = lhs.ty;
                 }
@@ -298,7 +298,7 @@ fn walk(mut node: Node, decay: bool) -> Node {
         }
         Addr(mut expr) => {
             expr = Box::new(walk(*expr, true));
-            check_lval(&*expr);
+            check_lval(&expr);
             node.ty = Box::new(Type::ptr_to(expr.ty.clone()));
             node.op = Addr(expr);
         }
