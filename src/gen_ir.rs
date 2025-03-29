@@ -123,6 +123,20 @@ pub enum IROp {
     AVX512Cvtpd2dq,
     AVX512Extract,
     AVX512Insert,
+    AVX512FMA,
+    AVX512Sqrt,
+    AVX512Max,
+    AVX512Min,
+    AVX512Round,
+    AVX512Blend,
+    AVX512Permute,
+    AVX512Broadcast,
+    AVX512Gather,
+    AVX512Scatter,
+    AVX512Reduce,
+    AVX512Pack,
+    AVX512Unpack,
+    AVX512And,
 }
 
 impl From<NodeType> for IROp {

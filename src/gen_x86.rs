@@ -259,6 +259,20 @@ fn gen(f: Function) {
             AVX512Cvtpd2dq => emit!("vcvtpd2dq {}, {}", ZMM_REGS[lhs].replace("zmm", "ymm"), ZMM_REGS[rhs]),
             AVX512Extract => emit!("vmovq {}, {}", REGS[lhs], ZMM_REGS[rhs].replace("zmm", "xmm")),
             AVX512Insert => emit!("vpinsrq {}, {}, {}, 0", ZMM_REGS[lhs].replace("zmm", "xmm"), ZMM_REGS[lhs].replace("zmm", "xmm"), REGS[rhs]),
+            AVX512FMA => emit!("vfmadd213pd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Sqrt => emit!("vsqrtpd {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs]),
+            AVX512Max => emit!("vmaxpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Min => emit!("vminpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Round => emit!("vrndscalepd {}, {}, 0", ZMM_REGS[lhs], ZMM_REGS[lhs]),
+            AVX512Blend => emit!("vblendmpd {}, {}, {} {{k1}}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Permute => emit!("vpermilpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Broadcast => emit!("vbroadcastsd {}, {}", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512Gather => emit!("vgatherdpd {} {{k1}}, [{}]", ZMM_REGS[lhs], REGS[rhs]),
+            AVX512Scatter => emit!("vscatterdpd [{}] {{k1}}, {}", REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Reduce => emit!("vreducepd {}, {}, 0", ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Pack => emit!("vpackssdw {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512Unpack => emit!("vunpcklpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
+            AVX512And => emit!("vandpd {}, {}, {}", ZMM_REGS[lhs], ZMM_REGS[lhs], ZMM_REGS[rhs]),
         }
     }
 
@@ -288,7 +302,7 @@ pub fn gen_x86(globals: Vec<Var>, fns: Vec<Function>) {
     // Emit data section if we have globals
     if !globals_data.is_empty() {
         println!("section .data");
-        for (name, data, len) in globals_data {
+        for (name, data, _len) in globals_data {
             println!("{}:", name);
             if data.is_empty() {
                 println!("    dq 0");

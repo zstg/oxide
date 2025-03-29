@@ -86,14 +86,62 @@ fn identify_array_operations(ir: &[IR]) -> Vec<(usize, usize)> {
     vector_ops
 }
 
-// Convert regular IR operations to AVX512 operations
+// Detect reduction patterns (sum, min, max)
+fn detect_reduction_patterns(ir: &[IR]) -> Vec<(usize, usize, IROp)> {
+    let mut reductions = Vec::new();
+    let mut i = 0;
+    
+    while i < ir.len() - 2 {
+        // Look for load followed by add/min/max and store to same variable
+        if matches!(ir[i].op, IROp::Load(_)) {
+            let load_dst = ir[i].lhs;
+            let load_src = ir[i].rhs;
+            
+            if i + 1 < ir.len() {
+                let op = match ir[i+1].op {
+                    IROp::Add => Some(IROp::AVX512Add),
+                    IROp::Mul => Some(IROp::AVX512Mul),
+                    // Add more reduction operations
+                    _ => None
+                };
+                
+                if let Some(reduction_op) = op {
+                    if i + 2 < ir.len() && matches!(ir[i+2].op, IROp::Store(_)) {
+                        if ir[i+2].rhs == load_dst && ir[i+2].lhs == load_src {
+                            // Found a reduction pattern
+                            reductions.push((i, i+2, reduction_op));
+                        }
+                    }
+                }
+            }
+        }
+        
+        i += 1;
+    }
+    
+    reductions
+}
+
+// Convert regular operations to SIMD operations with more intelligence
 fn convert_to_avx512(ir: &mut [IR]) {
     for i in 0..ir.len() {
         match ir[i].op {
             // Convert floating-point operations
             IROp::Add => ir[i].op = IROp::AVX512Add,
             IROp::Sub => ir[i].op = IROp::AVX512Sub,
-            IROp::Mul => ir[i].op = IROp::AVX512Mul,
+            IROp::Mul => {
+                if i + 1 < ir.len() && matches!(ir[i+1].op, IROp::Add) {
+                    if ir[i].lhs == ir[i+1].lhs {
+                        // Convert to FMA
+                        ir[i].op = IROp::AVX512FMA;
+                        ir[i+1].op = IROp::Nop; // Remove the add operation
+                    } else {
+                        ir[i].op = IROp::AVX512Mul;
+                    }
+                } else {
+                    ir[i].op = IROp::AVX512Mul;
+                }
+            },
             IROp::Div => ir[i].op = IROp::AVX512Div,
             
             // Convert integer operations
@@ -118,6 +166,9 @@ fn convert_to_avx512(ir: &mut [IR]) {
             IROp::LT => ir[i].op = IROp::AVX512Cmplt,
             IROp::LE => ir[i].op = IROp::AVX512Cmple,
             IROp::EQ => ir[i].op = IROp::AVX512Cmpeq,
+            
+            // Add more pattern-specific conversions
+            IROp::LT => ir[i].op = IROp::AVX512Cmplt,
             
             _ => {}
         }
@@ -152,6 +203,36 @@ fn has_array_operations(f: &Function) -> bool {
     false
 }
 
+// Detect math function calls that can be replaced with SIMD instructions
+fn optimize_math_functions(ir: &mut [IR]) {
+    let mut i = 0;
+    while i < ir.len() {
+        if let IROp::Call(ref name, nargs, _) = ir[i].op {
+            let _lhs = ir[i].lhs.unwrap_or(0);
+            
+            // Replace common math functions with SIMD instructions
+            match name.as_str() {
+                "sqrt" if nargs == 1 => {
+                    ir[i].op = IROp::AVX512Sqrt;
+                },
+                "fabs" if nargs == 1 => {
+                    // Use bitwise operation to clear sign bit
+                    ir[i].op = IROp::AVX512And;
+                },
+                "fmax" if nargs == 2 => {
+                    ir[i].op = IROp::AVX512Max;
+                },
+                "fmin" if nargs == 2 => {
+                    ir[i].op = IROp::AVX512Min;
+                },
+                // Add more math function optimizations
+                _ => {}
+            }
+        }
+        i += 1;
+    }
+}
+
 // Main vectorization function
 pub fn vectorize(fns: &mut Vec<Function>) {
     for f in fns {
@@ -168,5 +249,24 @@ pub fn vectorize(fns: &mut Vec<Function>) {
                 vectorize_ranges(&mut f.ir, &vector_ops);
             }
         }
+        
+        // Strategy 3: Check for reduction patterns
+        let reductions = detect_reduction_patterns(&f.ir);
+        if !reductions.is_empty() {
+            for (start, end, op) in reductions {
+                // Convert the reduction pattern to use SIMD
+                for i in start..=end {
+                    if i == start + 1 {
+                        // Clone the op to avoid the move error
+                        f.ir[i].op = op.clone();
+                    } else if i != start && i != end {
+                        f.ir[i].op = IROp::Nop;
+                    }
+                }
+            }
+        }
+        
+        // Strategy 4: Optimize math function calls
+        optimize_math_functions(&mut f.ir);
     }
 } 

@@ -75,6 +75,20 @@ impl IRInfo {
             AVX512Cvtpd2dq => IRInfo::new("AVX512_CVTPD2DQ", IRType::RegReg),
             AVX512Extract => IRInfo::new("AVX512_EXTRACT", IRType::RegReg),
             AVX512Insert => IRInfo::new("AVX512_INSERT", IRType::RegReg),
+            AVX512FMA => IRInfo::new("AVX512_FMA", IRType::RegReg),
+            AVX512Sqrt => IRInfo::new("AVX512_SQRT", IRType::Reg),
+            AVX512Max => IRInfo::new("AVX512_MAX", IRType::RegReg),
+            AVX512Min => IRInfo::new("AVX512_MIN", IRType::RegReg),
+            AVX512Round => IRInfo::new("AVX512_ROUND", IRType::Reg),
+            AVX512Blend => IRInfo::new("AVX512_BLEND", IRType::RegReg),
+            AVX512Permute => IRInfo::new("AVX512_PERMUTE", IRType::RegReg),
+            AVX512Broadcast => IRInfo::new("AVX512_BROADCAST", IRType::RegReg),
+            AVX512Gather => IRInfo::new("AVX512_GATHER", IRType::Mem),
+            AVX512Scatter => IRInfo::new("AVX512_SCATTER", IRType::Mem),
+            AVX512Reduce => IRInfo::new("AVX512_REDUCE", IRType::RegReg),
+            AVX512Pack => IRInfo::new("AVX512_PACK", IRType::RegReg),
+            AVX512Unpack => IRInfo::new("AVX512_UNPACK", IRType::RegReg),
+            AVX512And => IRInfo::new("AVX512_AND", IRType::RegReg),
         }
     }
 }

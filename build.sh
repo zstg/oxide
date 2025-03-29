@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-cargo run -- -dump-ir2 examples/arrays.cpp &>/dev/null | tee -a ir2.asm
+cargo run -- -dump-ir2 examples/fib.c &>/dev/null | tee -a out.asm
