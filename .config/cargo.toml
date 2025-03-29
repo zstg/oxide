@@ -1,8 +1,9 @@
 [build]
 rustflags = [
-	"-C", "target-feature=+avx2",
-	"-C", "target-cpu=icelake",
-	"-C", "opt-level=3",
-	"-C", "llvm-args=-vectorize-loops",
-	"-C", "llvm-args=-vectorize-slp"
+    "-C", "target-feature=+avx512f,+avx512dq,+avx512bw,+avx512vl",
+    "-C", "target-cpu=skylake-avx512",
+    "-C", "opt-level=3",
+    "-C", "llvm-args=-vectorize-loops",
+    "-C", "llvm-args=-vectorize-slp",
+    "-C", "llvm-args=-prefer-vector-width=512"
 ]
