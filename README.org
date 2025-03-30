@@ -1,5 +1,5 @@
 #+TITLE: Digital Assignment 3
-#+AUTHOR: Srikanth Anand (22BAI1117), Vageesh J (22B    ), Aravind N (22B    )
+#+AUTHOR: Srikanth Anand (22BAI1117), Vageesh J (22BAI1473), Aravind N (22BRS1099)
 
 * Design and algorithm
 This codebase implements a simple C compiler named oxide. This compiler follows a classic compiler structure, consisting of several distinct phases: _preprocessing_, _lexical analysis_ (tokenization), _parsing_, _semantic analysis_, _intermediate representation_ (IR) generation, _register allocation_, and _code generation_.
@@ -10,7 +10,7 @@ This phase handles C preprocessor directives like ~#include~ and ~#define~. The 
 
 ** Lexical Analysis (Tokenization) (token.rs):
 
-The ~tokenize~ function converts the preprocessed source code into a _stream of tokens_. The ~Tokenizer~ struct reads the source code /character by character/, identifying various lexical units (numbers, identifiers, operators, keywords, etc.). It handles multi-character operators, string literals (including escaped characters), character literals, and comments (both single-line and multi-line). Keywords are identified using a _lookup table_ (keyword_map). The tokenizer also performs newline /canonicalization/ (converting \r\n to \n) and handles backslash-newline sequences for line continuation. String literals are joined together /if/ adjacent.
+The ~tokenize~ function converts the preprocessed source code into a _stream of tokens_. The ~Tokenizer~ struct reads the source code /character by character/, identifying various lexical units (numbers, identifiers, operators, keywords, etc.). It handles multi-character operators, string literals (including escaped characters), character literals, and comments (both single-line and multi-line). Keywords are identified using a _lookup table_ (keyword_map). The tokenizer also performs newline canonicalization (converting \r\n to \n) and handles backslash-newline sequences for line continuation. String literals are joined together /if/ adjacent.
 
 ** Parsing (parse.rs):
 
@@ -449,7 +449,7 @@ fn gen_expr(node: Box<Node>) -> Option<usize> {
                     r1
                 }
                 MulEQ | DivEQ | ModEQ | AddEQ | SubEQ | ShlEQ | ShrEQ | BitandEQ | XorEQ
-                | BitorEQ => gen_assign_op(&op, &node.ty, lhs, rhs),
+                    | BitorEQ => gen_assign_op(&op, &node.ty, lhs, rhs),
                 EQ => gen_binop(IROp::EQ, lhs, rhs),
                 NE => gen_binop(IROp::NE, lhs, rhs),
                 LE => gen_binop(IROp::LE, lhs, rhs),
@@ -1445,12 +1445,12 @@ use std::collections::HashMap;
 // > Semantic errors are detected in a later pass.
 
 /* e.g.
- function -> param
+function -> param
 +---------+
 int main() {     ; +-+                        int   []         2
-  int ary[2];    ;   |               +->stmt->declaration->read_array->primary
-  ary[0]=1;      ;   | compound_stmt-+->stmt->...                ary
-  return ary[0]; ;   |               +->stmt->assign->postfix-+->primary
+int ary[2];    ;   |               +->stmt->declaration->read_array->primary
+ary[0]=1;      ;   | compound_stmt-+->stmt->...                ary
+return ary[0]; ;   |               +->stmt->assign->postfix-+->primary
 }                ; +-+                  return        []      +->primary
                                                                  0
 */
@@ -3385,7 +3385,7 @@ lazy_static! {
         Symbol::new("^=", TokenType::XorEQ),
         Symbol::new("|=", TokenType::BitorEQ),
     ]
-    .to_vec();
+	.to_vec();
 }
 
 // Tokenizer
