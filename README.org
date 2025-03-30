@@ -1,2 +1,2 @@
 * *NOTE*
-This repository has been moved to [GitLab](https://gitlab.com/zstg/oxide). Development continues there.
+This repository has been moved to [[https://gitlab.com/zstg/oxide][GitLab]]. Development continues there.
