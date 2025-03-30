@@ -1,0 +1,79 @@
+#+TITLE: Digital Assignment 3
+#+AUTHOR: Srikanth Anand (22BAI1117), Vageesh J (22BAI1473), Aravind N (22BRS1099)
+
+* Design and algorithm
+This codebase implements a simple C compiler named oxide. This compiler follows a classic compiler structure, consisting of several distinct phases: _preprocessing_, _lexical analysis_ (tokenization), _parsing_, _semantic analysis_, _intermediate representation_ (IR) generation, _register allocation_, and _code generation_.
+
+** Preprocessing (preprocess.rs):
+
+This phase handles C preprocessor directives like ~#include~ and ~#define~. The Preprocessor struct manages a symbol table (macros) storing defined macros. It iterates through the input tokens, recognizing and expanding macros. #include directives trigger the inclusion of header files, while #define directives add macros to the symbol table. Macros can be either object-like (simple text replacement) or function-like (with parameters). Function-like macros undergo parameter replacement and stringization (# operator) before expansion. Special macros like ~__LINE__~ are handled to provide line number information.
+
+** Lexical Analysis (Tokenization) (token.rs):
+
+The ~tokenize~ function converts the preprocessed source code into a _stream of tokens_. The ~Tokenizer~ struct reads the source code /character by character/, identifying various lexical units (numbers, identifiers, operators, keywords, etc.). It handles multi-character operators, string literals (including escaped characters), character literals, and comments (both single-line and multi-line). Keywords are identified using a _lookup table_ (keyword_map). The tokenizer also performs newline canonicalization (converting \r\n to \n) and handles backslash-newline sequences for line continuation. String literals are joined together /if/ adjacent.
+
+** Parsing (parse.rs):
+
+The ~parse~ function constructs an _Abstract Syntax Tree_ (AST) from the /token stream/. The ~Parser~ struct uses a /recursive-descent/ approach to parse the C grammar. It defines various parsing functions for different grammatical constructs (primary expressions, unary expressions, binary expressions, statements, etc.). The parser builds a tree of ~Node~ structs, each representing a grammatical element with its associated type (i.e ~Type~). The parser handles _function definitions_, _variable declarations_, _control flow statements_ ( ~if~, ~for~, ~while~, ~do-while~), and expressions. It also manages _nested scopes_ using an ~Env~ /struct/ to track defined variables and typedefs.
+
+** Semantic Analysis (sema.rs):
+
+The ~sema~ function performs _semantic checks_ on the AST. It _adds type information_ to the nodes, _resolves variable names_ based on scope rules, and _performs type checking_. It handles array-to-pointer *decay* (implicit conversion of arrays to pointers), /scales operands/ for pointer arithmetic, and rejects invalid assignments (e.g., assigning to a constant). The walk function /recursively traverses/ the AST, performing type checking and adding type information to each node. It manages the symbol table ( ~ENV~) to track variables in different scopes. String literals are converted to references to anonymous global variables.
+
+** Intermediate Representation (IR) Generation (gen_ir.rs):
+
+The ~gen_ir~ function /translates/ the semantically analyzed AST into an *intermediate representation* (IR). The IR *resembles* x86-64 assembly but uses an infinite number of virtual registers. The ~gen_expr~ and ~gen_stmt~ functions recursively traverse the AST, generating IR instructions for each node. The IR instructions are stored in a vector (called ~CODE~). The compiler uses a _three-address code_ representation, where each instruction has at most two operands and one result. Register allocation is simplified by using a "kill" operation to mark registers as dead after use.
+
+** Register Allocation (regalloc.rs):
+
+The ~alloc_regs~ function _maps_ the infinite number of virtual registers in the IR _to a finite set of physical registers_ (7 registers are assumed). It uses a simple /greedy/ register allocation algorithm, allocating registers within a single expression. Registers are marked as =used= or =unused= using a _bit vector_ (~USED~). The ~alloc~ function _assigns a physical register to a virtual register_ . The ~visit~ function traverses the IR, performing register allocation and replacing virtual registers with physical ones. The "kill" operation in the IR is replaced with a no-operation (Nop).
+
+** Code Generation (gen_x86.rs):
+
+The ~gen_x86~ function generates x86-64 assembly code from the allocated IR. It /emits/ assembly instructions corresponding to the IR instructions. It handles various instructions, including arithmetic operations, memory access, function calls, control flow, and $AVX-512$ instructions. The code generation handles global variables by emitting them in the ~.data~ section. The generated assembly code is _printed to standard output_. The gen function generates code for a single function.
+
+** Vectorization (vectorize.rs):
+
+This phase attempts to _optimize_ the generated IR for *SIMD* (Single Instruction, Multiple Data) execution using AVX-512 instructions. It employs several strategies:
+
+*** Loop Vectorization
+It checks for loops with regular memory access patterns and simple arithmetic operations, converting them to AVX-512 instructions.
+*** Array Operation Vectorization
+It identifies sequences of load, arithmetic, and store operations on arrays and converts them to AVX-512 instructions.
+*** Reduction Pattern Detection
+It detects reduction patterns (sum, min, max, etc.) and converts them to =AVX-512= reduction instructions.
+*** Math Function Optimization
+It replaces calls to certain math functions (sqrt, fabs, fmax, fmin) with their AVX-512 equivalents.
+
+Note that the vectorization process is heuristic-based; not all loops or array operations are necessarily vectorizable.
+
+To conclude,
+
+The compiler's phases are chained together. The output of one phase serves as the input to the next. The main function orchestrates the entire compilation process. Error handling is integrated into various parts of the codebase, using the bad_token and bad_position functions to report errors with line and column information. The use of lazy_static ensures that global variables are initialized only once. The code extensively uses Mutex to handle concurrent access to shared resources. The compiler's design prioritizes simplicity and clarity over advanced optimization techniques. The vectorization phase adds a layer of optimization, leveraging AVX-512 instructions where possible. The use of macros allows for code extensibility and customization.
+
+* Code
+https://github.com/zstg/oxide
+* Output
+Run the program with:
+#+BEGIN_SRC shell
+cd examples/
+cargo run -- -dump-ir2 mat.c > mat.s # Note the missing ampersand!!
+nasm -f elf64 mat.s -o mat
+# or nasm -f bin mat.s -o mat.bin
+chmod +x ./mat
+./mat
+#+END_SRC
+
+Note that the required Assembly file is ~mat.s~.
+
+** Screenshots
+[[./Screenshot_20250329_215336.png]]
+[[./Screenshot_20250329_215442.png]]
+[[./Screenshot_20250329_215458.png]]
+[[./Screenshot_20250329_215518.png]]
+[[./Screenshot_20250329_215530.png]]
+[[./Screenshot_20250329_215549.png]]
+[[./Screenshot_20250329_215600.png]]
+[[./Screenshot_20250329_215610.png]]
+[[./Screenshot_20250329_215758.png]]
+
